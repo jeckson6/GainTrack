@@ -4,7 +4,15 @@ import AuthLayout from '../layouts/AuthLayout';
 export default function Login() {
   return (
     <AuthLayout title="Login to GainTrack">
-      <form className="space-y-4">
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          localStorage.setItem('token', 'fake-jwt-token');
+          window.location.href = '/dashboard';
+        }}
+      >
+
         <div>
           <label className="block text-sm font-medium">Email</label>
           <input
