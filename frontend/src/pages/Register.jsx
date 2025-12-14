@@ -1,52 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AuthLayout from '../layouts/AuthLayout';
+import { register } from '../services/api';
 
 export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      await register(email, password);
+      window.location.href = '/login';
+    } catch {
+      alert('Register failed');
+    }
+  };
+
   return (
-    <AuthLayout title="Create GainTrack Account">
-      <form className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input
-            type="email"
-            className="w-full mt-1 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-green-400"
-            placeholder="user@email.com"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Password</label>
-          <input
-            type="password"
-            className="w-full mt-1 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-green-400"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            className="w-full mt-1 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-green-400"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition"
-        >
+    <AuthLayout title="Create Account">
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border p-2"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border p-2"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button className="w-full bg-green-500 text-white py-2 rounded">
           Register
         </button>
-
-        <p className="text-sm text-center text-gray-500">
-          Already have an account?{' '}
-          <a href="/login" className="text-green-500 hover:underline">
-            Login
-          </a>
-        </p>
       </form>
     </AuthLayout>
   );
