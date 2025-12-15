@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 
 const userRoutes = require("./routes/userRoutes");
+const healthRoutes = require("./routes/healthRecordRoutes");
 
 const app = express();
 console.log("DB_USER:", process.env.DB_USER);
@@ -13,7 +14,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+//routes
 app.use("/api/user", userRoutes);
+app.use("/api/health", healthRoutes);
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");

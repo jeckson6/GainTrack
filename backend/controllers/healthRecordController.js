@@ -30,17 +30,29 @@ exports.createRecord = (req, res) => {
 
 // READ
 exports.getRecords = (req, res) => {
-  const userId = req.query.userId;
+  const { userId } = req.query;
 
-  db.query(
-    "SELECT * FROM HealthRecords WHERE UserID = ? ORDER BY RecordedDate DESC",
-    [userId],
-    (err, results) => {
-      if (err) return res.status(500).json({ message: "Fetch failed" });
-      res.json(results);
+  if (!userId) {
+    return res.status(400).json({ message: "userId is required" });
+  }
+
+  const sql = `
+    SELECT *
+    FROM HealthRecords
+    WHERE UserID = ?
+    ORDER BY RecordedDate DESC
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
     }
-  );
+
+    res.json(results);
+  });
 };
+
 
 // UPDATE
 exports.updateRecord = (req, res) => {

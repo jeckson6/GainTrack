@@ -4,6 +4,7 @@ import HealthChart from "../components/HealthChart";
 export default function HealthRecords() {
   const [records, setRecords] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const user = JSON.parse(localStorage.getItem("user"));
   const [editForm, setEditForm] = useState({
     weight: "",
     bodyFat: "",
@@ -18,6 +19,14 @@ export default function HealthRecords() {
     goalType: "Maintain",
     recordedDate: ""
   });
+  useEffect(() => {
+    if (!user) return;
+
+    fetch(`http://localhost:5000/api/health?userId=${user.UserID}`)
+      .then(res => res.json())
+      .then(data => setRecords(data))
+      .catch(err => console.error(err));
+  }, []);
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
@@ -28,7 +37,7 @@ export default function HealthRecords() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        userId: 1, // simplified system
+        userId: user.UserID,
         weight: form.weight,
         bodyFat: form.bodyFat,
         bmi: form.bmi,
@@ -77,9 +86,15 @@ export default function HealthRecords() {
 
   // ✅ FETCH
   const refreshRecords = async () => {
-    const res = await fetch("http://localhost:5000/api/health?userId=1");
+    if (!user) return;
+
+    const res = await fetch(
+      `http://localhost:5000/api/health?userId=${user.UserID}`
+    );
+
     setRecords(await res.json());
   };
+
 
   const resetForm = () => {
     setForm({
@@ -94,7 +109,7 @@ export default function HealthRecords() {
 
   useEffect(() => {
     refreshRecords();
-  }, []);
+  }, [user]);
 
   <div className="mb-6">
     <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -105,7 +120,12 @@ export default function HealthRecords() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-4">Health Records</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Health Records</h1>
+        <p className="text-gray-500">
+          Track your health progress and manage records
+        </p>
+      </div>
 
       <div className="mb-6">
         {records.length > 0 && <HealthChart records={records} />}
