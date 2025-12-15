@@ -7,6 +7,7 @@ const userRoutes = require("./routes/userRoutes");
 const healthRoutes = require("./routes/healthRecordRoutes");
 const trainingPlanRoutes = require("./routes/trainingPlanRoutes");
 const foodPlanRoutes = require("./routes/foodPlanRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 console.log("DB_USER:", process.env.DB_USER);
@@ -21,6 +22,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/training-plan", trainingPlanRoutes);
 app.use("/api/food-plan", foodPlanRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");

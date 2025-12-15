@@ -48,6 +48,10 @@ export default function Sidebar() {
         <NavLink to="/food-plan" className={linkClass}>
           🥗 Food Plan
         </NavLink>
+
+        <NavLink to="/ai-assistant" className={linkClass}>
+          🤖 AI Assistant
+        </NavLink>
       </nav>
 
       {/* Logout */}

@@ -4,6 +4,7 @@ import Layout from './layouts/Layout';
 import HealthRecords from './pages/HealthRecords';
 import TrainingPlan from './pages/TrainingPlan';
 import FoodPlan from './pages/FoodPlan';
+import AIAssistant from './pages/AICoach';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -29,6 +30,7 @@ function App() {
         <Route path="/health-records" element={<HealthRecords />} />
         <Route path="/training-plan" element={<TrainingPlan />} />
          <Route path="/food-plan" element={<FoodPlan />} />
+           <Route path="/ai-assistant" element={<AIAssistant/>} />
        
 
       </Route>
