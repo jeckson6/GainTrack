@@ -17,11 +17,10 @@ export default function Sidebar() {
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2 rounded-lg transition
-     ${
-       isActive
-         ? "bg-blue-600 text-white"
-         : "text-gray-300 hover:bg-gray-800 hover:text-white"
-     }`;
+     ${isActive
+      ? "bg-blue-600 text-white"
+      : "text-gray-300 hover:bg-gray-800 hover:text-white"
+    }`;
 
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
@@ -43,8 +42,7 @@ export default function Sidebar() {
         </NavLink>
 
         <NavLink to="/training-plan" className={linkClass}>
-          <FiCalendar />
-          Training Plan
+          🏋 Training Plan
         </NavLink>
 
         <NavLink to="/food-plan" className={linkClass}>
