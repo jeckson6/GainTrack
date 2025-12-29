@@ -1,9 +1,9 @@
-// FILE: ProfileModal.jsx
 import React, { useEffect, useState } from "react";
 
 export default function ProfileModal({ profile, onClose, onSave }) {
   const isCreate = profile?.mode === "create";
   const [editMode, setEditMode] = useState(isCreate);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     email: "",
@@ -20,35 +20,67 @@ export default function ProfileModal({ profile, onClose, onSave }) {
   useEffect(() => {
     if (!profile || isCreate) return;
 
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      email: profile.Email ?? "",
+      password: "",
+      makeAdmin: profile.Role === "Admin",
       firstName: profile.FirstName ?? "",
       lastName: profile.LastName ?? "",
       gender: profile.Gender ?? "",
       contact: profile.Contact ?? "",
       dateOfBirth: profile.DateOfBirth ?? "",
       isActive: Boolean(profile.IsActive)
-    }));
+    });
 
     setEditMode(false);
   }, [profile?.UserID]);
 
   const onChange = (key) => (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [key]:
-        e.target.type === "checkbox"
-          ? e.target.checked
-          : e.target.value
-    }));
+    const value =
+      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: null }));
   };
+
+  const validate = () => {
+    const e = {};
+
+    if (isCreate && !form.email) e.email = "Email is required";
+    if (isCreate && !form.password) e.password = "Password is required";
+
+    if (form.email && !form.email.includes("@"))
+      e.email = "Invalid email format";
+
+    if (isCreate && form.password.length < 6)
+      e.password = "Minimum 6 characters";
+
+    if (!isCreate) {
+      if (!form.firstName) e.firstName = "Required";
+      if (!form.lastName) e.lastName = "Required";
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+ const handleSave = () => {
+  if (!validate()) return;
+
+  if (typeof onSave === "function") {
+    onSave(form);
+  } else {
+    console.error("onSave not provided to ProfileModal");
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-[460px]">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white rounded-xl w-full max-w-lg shadow-lg p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-5">
           <h2 className="text-lg font-bold">
-            {isCreate ? "Add User" : "User Profile"}
+            {isCreate ? "Create User" : "User Profile"}
           </h2>
 
           {!isCreate && !editMode && (
@@ -56,106 +88,104 @@ export default function ProfileModal({ profile, onClose, onSave }) {
               onClick={() => setEditMode(true)}
               className="bg-indigo-600 text-white px-3 py-1 rounded text-sm"
             >
-              Update
+              Edit
             </button>
           )}
         </div>
 
         {!isCreate && (
-          <div className="text-sm mb-4 space-y-1">
-            <p><b>Email:</b> {profile?.Email ?? "-"}</p>
-            <p><b>Role:</b> {profile?.Role ?? "-"}</p>
+          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+            <Info label="Email" value={profile?.Email} />
+            <Info label="Role" value={profile?.Role} />
           </div>
         )}
 
-        {isCreate && (
-          <div className="space-y-3 text-sm">
-            <Field label="Email">
-              <input
-                value={form.email}
-                onChange={onChange("email")}
-              />
-            </Field>
+        {/* FORM */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          {isCreate && (
+            <>
+              <Field label="Email" error={errors.email}>
+                <input value={form.email} onChange={onChange("email")} />
+              </Field>
 
-            <Field label="Password">
-              <input
-                type="password"
-                value={form.password}
-                onChange={onChange("password")}
-              />
-            </Field>
-          </div>
-        )}
+              <Field label="Password" error={errors.password}>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={onChange("password")}
+                />
+              </Field>
+            </>
+          )}
 
-        {!isCreate && (
-          <div className="space-y-3 text-sm">
-            <Field label="First Name">
-              <input
-                value={form.firstName}
-                onChange={onChange("firstName")}
-                disabled={!editMode}
-              />
-            </Field>
+          {!isCreate && (
+            <>
+              <Field label="First Name" error={errors.firstName}>
+                <input
+                  value={form.firstName}
+                  onChange={onChange("firstName")}
+                  disabled={!editMode}
+                />
+              </Field>
 
-            <Field label="Last Name">
-              <input
-                value={form.lastName}
-                onChange={onChange("lastName")}
-                disabled={!editMode}
-              />
-            </Field>
+              <Field label="Last Name" error={errors.lastName}>
+                <input
+                  value={form.lastName}
+                  onChange={onChange("lastName")}
+                  disabled={!editMode}
+                />
+              </Field>
 
-            <Field label="Gender">
-              <select
-                value={form.gender}
-                onChange={onChange("gender")}
-                disabled={!editMode}
-              >
-                <option value="">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </Field>
+              <Field label="Gender">
+                <select
+                  value={form.gender}
+                  onChange={onChange("gender")}
+                  disabled={!editMode}
+                >
+                  <option value="">Select</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
+                </select>
+              </Field>
 
-            <Field label="Contact">
-              <input
-                value={form.contact}
-                onChange={onChange("contact")}
-                disabled={!editMode}
-              />
-            </Field>
+              <Field label="Contact">
+                <input
+                  value={form.contact}
+                  onChange={onChange("contact")}
+                  disabled={!editMode}
+                />
+              </Field>
 
-            <Field label="Date of Birth">
-              <input
-                type="date"
-                value={form.dateOfBirth}
-                onChange={onChange("dateOfBirth")}
-                disabled={!editMode}
-              />
-            </Field>
+              <Field label="Date of Birth">
+                <input
+                  type="date"
+                  value={form.dateOfBirth}
+                  onChange={onChange("dateOfBirth")}
+                  disabled={!editMode}
+                />
+              </Field>
 
+              <div className="flex items-center gap-2 mt-6">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={onChange("isActive")}
+                  disabled={!editMode}
+                />
+                Active Account
+              </div>
+            </>
+          )}
+        </div>
 
-
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={onChange("isActive")}
-                disabled={!editMode}
-              />
-              Active
-            </label>
-          </div>
-        )}
-
+        {/* FOOTER */}
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose}>Close</button>
+          <button onClick={onClose}>Cancel</button>
 
           {(isCreate || editMode) && (
             <button
-              onClick={() => onSave(form)}
+              onClick={handleSave}
               className="bg-indigo-600 text-white px-4 py-2 rounded text-sm"
             >
               Save
@@ -167,14 +197,23 @@ export default function ProfileModal({ profile, onClose, onSave }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, error, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+      <label className="block text-xs font-semibold mb-1">{label}</label>
       {React.cloneElement(children, {
         className:
           "w-full border rounded p-2 disabled:bg-gray-100 disabled:text-gray-600"
       })}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <p>
+      <b>{label}:</b> {value || "-"}
+    </p>
   );
 }

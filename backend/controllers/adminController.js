@@ -19,8 +19,7 @@ exports.getAdminProfile = async (req, res) => {
         FirstName,
         LastName,
         Gender,
-        CreatedAt,
-        LastLoginAt
+        CreatedAt
       FROM Admins
       WHERE UserID = ?
       `,

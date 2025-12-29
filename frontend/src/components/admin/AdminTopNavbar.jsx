@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FiLogOut, FiUser } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import ProfileModal from "./ProfileModal";
@@ -14,9 +14,9 @@ export default function AdminTopNavbar() {
   if (!adminUser) return null;
 
   const isActive = (path) =>
-    location.pathname === path
-      ? "text-indigo-400"
-      : "hover:text-indigo-400";
+    location.pathname.startsWith(path)
+      ? "text-white border-b-2 border-white"
+      : "text-indigo-200 hover:text-white";
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -32,20 +32,21 @@ export default function AdminTopNavbar() {
     setShowProfile(true);
   };
 
+
   return (
     <>
-      <div className="h-16 bg-gray-900 text-white flex items-center justify-between px-6 shadow">
+      <header className="h-16 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white flex items-center justify-between px-8 shadow-lg">
         {/* Left */}
         <div>
-          <h1 className="text-lg font-bold leading-none">GainTrack</h1>
-          <p className="text-xs text-gray-400 underline">Admin Panel</p>
+          <h1 className="text-lg font-extrabold tracking-wide">GainTrack</h1>
+          <p className="text-xs opacity-80">Admin Control Center</p>
         </div>
 
         {/* Center */}
-        <div className="flex gap-6 text-sm">
+        <nav className="flex gap-8 text-sm font-medium">
           <button
-            onClick={() => navigate("/admin")}
-            className={isActive("/admin/dashboard")}
+            onClick={() => navigate("/admin/dashboard")}
+            className={isActive("/admin")}
           >
             Dashboard
           </button>
@@ -70,34 +71,23 @@ export default function AdminTopNavbar() {
           >
             Analytics
           </button>
-        </div>
+        </nav>
 
         {/* Right */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={openProfile}
-            className="flex items-center gap-2 text-sm text-gray-300 hover:text-white"
-          >
             <FiUser />
             {adminUser.Email}
-          </button>
+
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-sm"
+            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-full text-sm transition"
           >
             <FiLogOut />
             Logout
           </button>
         </div>
-      </div>
-
-      {showProfile && (
-        <ProfileModal
-          profile={profile}
-          onClose={() => setShowProfile(false)}
-        />
-      )}
+      </header>
     </>
   );
 }

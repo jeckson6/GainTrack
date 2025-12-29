@@ -68,6 +68,7 @@ function App() {
         }
       >
         <Route index element={<AdminDashboard />} />
+         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="analytics" element={<SystemAnalytics />} />
         <Route path="ai-usage" element={<AIUsageMonitor />} />
