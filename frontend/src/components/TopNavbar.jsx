@@ -17,7 +17,7 @@ export default function TopNavbar({ toggleSidebar }) {
     if (!user) return;
 
     const res = await fetch(
-      `http://localhost:5000/api/users/profile?userId=${user.UserID}`
+      `http://localhost:5000/api/users/profile?userId=${user.user_id}`
     );
     const data = await res.json();
     setProfile(data);
@@ -39,10 +39,10 @@ export default function TopNavbar({ toggleSidebar }) {
   // AVATAR LOGIC
   // ======================
   const avatar =
-    profile?.ProfileImageURL ||
-    (profile?.Gender === "Male"
+    profile?.profile_image_url ||
+    (profile?.gender === "Male"
       ? maleAvatar
-      : profile?.Gender === "Female"
+      : profile?.gender === "Female"
       ? femaleAvatar
       : otherAvatar);
 
@@ -68,7 +68,7 @@ export default function TopNavbar({ toggleSidebar }) {
         onClick={() => navigate("/profile-settings")}
       >
         <span className="text-sm text-gray-600">
-          {user.Email}
+          {user.user_email}
         </span>
 
         <img

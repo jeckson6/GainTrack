@@ -5,6 +5,7 @@ export default function AIUsageMonitor() {
   const [announcement, setAnnouncement] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   const adminUserId = JSON.parse(localStorage.getItem("user"))?.UserID;
 
@@ -12,35 +13,66 @@ export default function AIUsageMonitor() {
   // LOAD DATA
   // ======================
   useEffect(() => {
+    // AI usage
     fetch("http://localhost:5000/api/admins/ai-usage")
       .then((res) => res.json())
-      .then(setUsage);
+      .then((data) =>
+        setUsage({
+          unsplash: {
+            used: data.unsplash.used,
+            limit: data.unsplash.limit
+          },
+          openai: {
+            today: data.openai.today
+          }
+        })
+      )
+      .catch(() => setUsage(null));
 
+    // System announcement
     fetch("http://localhost:5000/api/admins/config")
       .then((res) => res.json())
       .then((data) => {
         setAnnouncement(data.announcement || "");
-        setExpiresAt(data.expiresAt || "");
+        setExpiresAt(
+          data.expiresAt ? data.expiresAt.slice(0, 10) : ""
+        );
+      })
+      .catch(() => {
+        setAnnouncement("");
+        setExpiresAt("");
       });
   }, []);
 
+  // ======================
+  // SAVE ANNOUNCEMENT
+  // ======================
   const saveAnnouncement = async () => {
     setSaving(true);
+    setMessage("");
 
-    await fetch("http://localhost:5000/api/admins/config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        announcement,
-        expiresAt: expiresAt || null,
-        adminUserId
-      })
-    });
+    try {
+      await fetch("http://localhost:5000/api/admins/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          announcement,
+          expiresAt: expiresAt || null,
+          adminUserId
+        })
+      });
 
-    setSaving(false);
-    alert("Announcement saved");
+      setMessage("✅ Announcement saved successfully");
+    } catch {
+      setMessage("❌ Failed to save announcement");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  // ======================
+  // LOADING STATE
+  // ======================
   if (!usage) {
     return (
       <div className="p-6 text-gray-500">
@@ -92,7 +124,7 @@ export default function AIUsageMonitor() {
 
       {/* USAGE DETAILS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* UNSPLASH USAGE */}
+        {/* UNSPLASH */}
         <div className="bg-white shadow rounded-xl p-5">
           <h3 className="font-semibold text-gray-700 mb-4">
             📸 Unsplash API Usage
@@ -116,7 +148,7 @@ export default function AIUsageMonitor() {
           )}
         </div>
 
-        {/* OPENAI USAGE */}
+        {/* OPENAI */}
         <div className="bg-white shadow rounded-xl p-5">
           <h3 className="font-semibold text-gray-700 mb-4">
             🧠 OpenAI Usage Summary
@@ -137,7 +169,7 @@ export default function AIUsageMonitor() {
         </h3>
 
         <p className="text-sm text-gray-500 mb-3">
-          Display system-wide messages to all users (e.g. maintenance, AI limits)
+          Display system-wide messages to all users
         </p>
 
         <textarea
@@ -164,6 +196,12 @@ export default function AIUsageMonitor() {
             {saving ? "Saving..." : "Save Announcement"}
           </button>
         </div>
+
+        {message && (
+          <p className="mt-3 text-sm font-medium text-green-600">
+            {message}
+          </p>
+        )}
       </div>
     </div>
   );

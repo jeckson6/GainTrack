@@ -20,17 +20,17 @@ ChartJS.register(
 );
 
 export default function HealthChart({ records }) {
-    // sort by date (important)
+    // sort by date
     const sorted = [...records].sort(
-        (a, b) => new Date(a.RecordedDate) - new Date(b.RecordedDate)
+        (a, b) => new Date(a.recorded_date) - new Date(b.recorded_date)
     );
 
     const labels = sorted.map(r =>
-        new Date(r.RecordedDate).toISOString().slice(0, 10)
+        new Date(r.recorded_date).toISOString().slice(0, 10)
     );
 
-    const weightData = sorted.map(r => r.Weight_kg);
-    const bmiData = sorted.map(r => r.BMI);
+    const weightData = sorted.map(r => r.weight_kg);
+    const bmiData = sorted.map(r => r.bmi);
 
     const data = {
         labels,

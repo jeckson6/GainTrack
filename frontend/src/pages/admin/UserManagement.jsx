@@ -12,7 +12,7 @@ export default function UserManagement() {
   const [toast, setToast] = useState(null);
   const [showAddAdmin, setShowAddAdmin] = useState(false);
 
-  const adminUserId = JSON.parse(localStorage.getItem("user"))?.UserID;
+  const adminUserId = JSON.parse(localStorage.getItem("user"))?.user_id;
 
   // ======================
   // LOAD USERS
@@ -37,27 +37,39 @@ export default function UserManagement() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: user.UserID,
-        isActive: !user.IsActive,
+        userId: user.user_id,
+        isActive: !user.is_active,
         adminUserId
       })
     });
 
     setToast({
-      message: user.IsActive ? "User deactivated" : "User activated",
-      type: user.IsActive ? "warning" : "success"
+      message: user.is_active ? "User deactivated" : "User activated",
+      type: user.is_active ? "warning" : "success"
     });
 
     loadUsers();
   };
 
-  const openProfile = async (userId) => {
-    const res = await fetch(
-      `http://localhost:5000/api/admins/users/profile?userId=${userId}`
-    );
-    const data = await res.json();
-    setSelected({ mode: "edit", ...data });
-  };
+ const openProfile = async (user_id) => {
+  const res = await fetch(
+    `http://localhost:5000/api/admins/users/profile?userId=${user_id}`
+  );
+  const data = await res.json();
+
+  setSelected({
+   mode: "edit",
+    user_id: data.user_id,
+    user_email: data.user_email,
+    first_name: data.user_first_name,
+    last_name: data.user_last_name,
+    gender: data.user_gender,
+    contact: data.user_contact,
+    date_of_birth: data.user_date_of_birth,
+    is_active: Boolean(data.is_active),
+    role: data.role
+  });
+};
 
   const saveProfile = async (userId, form) => {
     if (!userId) {
@@ -117,7 +129,7 @@ export default function UserManagement() {
         lastName: "Admin",
         gender: "Other",
         contact: null,
-        adminUserId: currentAdmin.UserID
+        adminUserId: currentAdmin.user_id
       })
     });
 
@@ -132,10 +144,10 @@ export default function UserManagement() {
     const keyword = search.toLowerCase();
 
     const matchesSearch =
-      String(u.UserID).includes(keyword) ||
-      u.Email.toLowerCase().includes(keyword) ||
-      u.Role.toLowerCase().includes(keyword) ||
-      (u.IsActive ? "active" : "inactive").includes(keyword);
+      String(u.user_id).includes(keyword) ||
+      u.user_email.toLowerCase().includes(keyword) ||
+      u.role.toLowerCase().includes(keyword) ||
+      (u.is_active ? "active" : "inactive").includes(keyword);
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -236,31 +248,31 @@ export default function UserManagement() {
 
               {filteredUsers.map((u, index) => (
                 <tr
-                  key={u.UserID}
+                  key={u.user_id}
                   className="border-t hover:bg-gray-50 transition"
                 >
                   <td className="p-3 text-center">{index + 1}</td>
-                  <td className="p-3">{u.UserID}</td>
-                  <td className="p-3">{u.Email}</td>
+                  <td className="p-3">{u.user_id}</td>
+                  <td className="p-3">{u.user_email}</td>
 
                   <td className="p-3">
                     <span
                       className={`px-2 py-1 text-xs rounded font-semibold
-                        ${u.IsActive
+                        ${u.is_active 
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"}
                       `}
                     >
-                      {u.IsActive ? "Active" : "Inactive"}
+                      {u.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
 
-                  <td className="p-3">{u.Role}</td>
+                  <td className="p-3">{u.role}</td>
 
                   <td className="p-3">
                     <div className="flex justify-center gap-2">
                       <button
-                        onClick={() => openProfile(u.UserID)}
+                        onClick={() => openProfile(u.user_id)}
                         className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs"
                       >
                         Edit
@@ -269,16 +281,16 @@ export default function UserManagement() {
                       <button
                         onClick={() => toggleStatus(u)}
                         className={`px-3 py-1 rounded text-white text-xs
-                          ${u.IsActive
+                          ${u.is_active 
                             ? "bg-red-500 hover:bg-red-600"
                             : "bg-green-500 hover:bg-green-600"}
                         `}
                       >
-                        {u.IsActive ? "Deactivate" : "Activate"}
+                        {u.is_active  ? "Deactivate" : "Activate"}
                       </button>
 
                       <button
-                        onClick={() => deleteUser(u.UserID)}
+                        onClick={() => deleteUser(u.user_id)}
                         className="px-3 py-1 bg-gray-700 hover:bg-gray-800 text-white rounded text-xs"
                       >
                         Delete
@@ -297,7 +309,7 @@ export default function UserManagement() {
         <ProfileModal
           profile={selected}
           onClose={() => setSelected(null)}
-          onSave={(form) => saveProfile(selected.UserID, form)}
+          onSave={(form) => saveProfile(selected.user_id, form)}
         />
       )}
 

@@ -12,23 +12,23 @@ import {
 
 export default function HealthTrendChart({ records }) {
 
-  // 🔒 SAFETY: Ensure array
+  //  SAFETY: Ensure array
   if (!Array.isArray(records)) {
     return null;
   }
 
-  // ✅ Transform & sanitize data
+  //  Transform & sanitize data
   const data = records
     .map((r) => ({
-      date: r.RecordedDate?.split("T")[0],
-      weight: r.Weight_kg ? Number(r.Weight_kg) : null,
-      bodyFat: r.BodyFatPercentage !== null
-        ? Number(r.BodyFatPercentage)
+      date: r.recorded_date?.split("T")[0],
+      weight: r.weight_kg  ? Number(r.weight_kg) : null,
+      bodyFat: r.body_fat_percentage !== null
+        ? Number(r.body_fat_percentage)
         : null
     }))
     .filter((r) => r.date && r.weight !== null);
 
-  // ✅ REAL condition (after processing)
+  //  REAL condition (after processing)
   if (data.length < 2) {
     return (
       <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">

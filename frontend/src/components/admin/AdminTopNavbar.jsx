@@ -25,7 +25,7 @@ export default function AdminTopNavbar() {
 
   const openProfile = async () => {
     const res = await fetch(
-      `http://localhost:5000/api/admins/profile?userId=${adminUser.UserID}`
+      `http://localhost:5000/api/admins/profile?userId=${adminUser.user_id}`
     );
     const data = await res.json();
     setProfile(data);

@@ -23,10 +23,24 @@ export default function SystemAnalytics() {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
+    // ======================
+    // TRAINING ANALYTICS
+    // ======================
     fetch("http://localhost:5000/api/admins/analytics/training")
       .then((res) => res.json())
-      .then(setTraining);
+      .then((rows) =>
+        setTraining(
+          rows.map((r) => ({
+            training_method: r.training_method || r.TrainingMethod,
+            count: r.count
+          }))
+        )
+      )
+      .catch(() => setTraining([]));
 
+    // ======================
+    // DASHBOARD (GENDER)
+    // ======================
     fetch("http://localhost:5000/api/admins/dashboard")
       .then((res) => res.json())
       .then((d) => {
@@ -35,11 +49,26 @@ export default function SystemAnalytics() {
           { name: "Female", value: d.femaleCount },
           { name: "Other", value: d.otherCount }
         ]);
+      })
+      .catch(() => setGender([]));
 
-        fetch("http://localhost:5000/api/admins/system-logs")
-          .then((res) => res.json())
-          .then(setLogs);
-      });
+    // ======================
+    // SYSTEM LOGS
+    // ======================
+    fetch("http://localhost:5000/api/admins/system-logs")
+      .then((res) => res.json())
+      .then((rows) =>
+        setLogs(
+          rows.map((l) => ({
+            log_id: l.log_id || l.LogID,
+            action: l.action || l.Action,
+            target: l.target || l.Target,
+            created_at: l.created_at || l.CreatedAt,
+            admin_email: l.admin_email || l.AdminEmail
+          }))
+        )
+      )
+      .catch(() => setLogs([]));
   }, []);
 
   return (
@@ -61,13 +90,13 @@ export default function SystemAnalytics() {
 
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={training}>
-              <XAxis dataKey="TrainingMethod" />
+              <XAxis dataKey="training_method" />
               <YAxis />
               <Tooltip />
               <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                {training.map((_, i) => (
+                {training.map((entry, i) => (
                   <Cell
-                    key={i}
+                    key={entry.training_method}
                     fill={TRAINING_COLORS[i % TRAINING_COLORS.length]}
                   />
                 ))}
@@ -91,9 +120,9 @@ export default function SystemAnalytics() {
                 innerRadius={60}
                 outerRadius={100}
               >
-                {gender.map((_, i) => (
+                {gender.map((g, i) => (
                   <Cell
-                    key={i}
+                    key={g.name}
                     fill={GENDER_COLORS[i % GENDER_COLORS.length]}
                   />
                 ))}
@@ -105,7 +134,7 @@ export default function SystemAnalytics() {
       </div>
 
       {/* ======================
-          SYSTEM LOGS (CENTERED)
+          SYSTEM LOGS
       ====================== */}
       <div className="bg-white shadow rounded-xl p-5 max-w-5xl mx-auto">
         <h3 className="font-semibold text-gray-700 mb-4 text-center">
@@ -131,25 +160,25 @@ export default function SystemAnalytics() {
               <tbody>
                 {logs.map((log) => (
                   <tr
-                    key={log.LogID}
+                    key={log.log_id}
                     className="border-t hover:bg-gray-50 transition"
                   >
                     <td className="p-3 text-gray-500">
-                      {new Date(log.CreatedAt).toLocaleString()}
+                      {new Date(log.created_at).toLocaleString()}
                     </td>
 
                     <td className="p-3 font-medium text-gray-800">
-                      {log.AdminEmail}
+                      {log.admin_email}
                     </td>
 
                     <td className="p-3">
                       <span className="px-2 py-1 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
-                        {log.Action.replace("_", " ").toLowerCase()}
+                        {log.action.replace("_", " ").toLowerCase()}
                       </span>
                     </td>
 
                     <td className="p-3 text-gray-700">
-                      {log.Target || "-"}
+                      {log.target || "-"}
                     </td>
                   </tr>
                 ))}

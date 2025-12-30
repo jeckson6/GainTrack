@@ -469,29 +469,32 @@ exports.removeAdmin = async (req, res) => {
 // ======================
 exports.getAIUsage = async (req, res) => {
   try {
+    // Unsplash usage (food plans generated today)
     const [[foodPlans]] = await db.promise().query(`
       SELECT COUNT(*) AS used
       FROM ai_food_plan
-      WHERE DATE(CreatedAt) = CURDATE()
+      WHERE DATE(created_at) = CURDATE()
     `);
 
-    const [[openai]] = await db.promise().query(`
+    // OpenAI usage (training plans generated today)
+    const [[trainingPlans]] = await db.promise().query(`
       SELECT COUNT(*) AS today
       FROM ai_training_plan
-      WHERE DATE(CreatedAt) = CURDATE()
+      WHERE DATE(created_at) = CURDATE()
     `);
 
     res.json({
       unsplash: {
-        used: foodPlans.used,
+        used: foodPlans.used || 0,
         limit: 50
       },
       openai: {
-        today: openai.today
+        today: trainingPlans.today || 0
       }
     });
   } catch (err) {
-    res.status(500).json({ message: "AI usage error" });
+    console.error("AI USAGE ERROR:", err);
+    res.status(500).json({ message: "Failed to load AI usage" });
   }
 };
 

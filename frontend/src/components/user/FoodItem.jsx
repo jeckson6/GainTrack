@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-// 🔒 Frontend image cache (persists across day switching)
 const imageCache = new Map();
 
 export default function FoodItem({ food }) {

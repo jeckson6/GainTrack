@@ -21,19 +21,19 @@ export default function ProfileModal({ profile, onClose, onSave }) {
     if (!profile || isCreate) return;
 
     setForm({
-      email: profile.Email ?? "",
-      password: "",
-      makeAdmin: profile.Role === "Admin",
-      firstName: profile.FirstName ?? "",
-      lastName: profile.LastName ?? "",
-      gender: profile.Gender ?? "",
-      contact: profile.Contact ?? "",
-      dateOfBirth: profile.DateOfBirth ?? "",
-      isActive: Boolean(profile.IsActive)
-    });
+    email: profile.user_email ?? "",
+    password: "",
+    makeAdmin: profile.role === "admin",
+    firstName: profile.first_name ?? "",
+    lastName: profile.last_name ?? "",
+    gender: profile.gender ?? "",
+    contact: profile.contact ?? "",
+    dateOfBirth: profile.date_of_birth ?? "",
+    isActive: Boolean(profile.is_active)
+  });
 
     setEditMode(false);
-  }, [profile?.UserID]);
+  }, [profile?.user_id]);
 
   const onChange = (key) => (e) => {
     const value =
@@ -68,7 +68,10 @@ export default function ProfileModal({ profile, onClose, onSave }) {
   if (!validate()) return;
 
   if (typeof onSave === "function") {
-    onSave(form);
+   onSave({
+      ...form,
+      userId: profile?.user_id  
+    });
   } else {
     console.error("onSave not provided to ProfileModal");
   }
@@ -95,8 +98,8 @@ export default function ProfileModal({ profile, onClose, onSave }) {
 
         {!isCreate && (
           <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-            <Info label="Email" value={profile?.Email} />
-            <Info label="Role" value={profile?.Role} />
+            <Info label="Email" value={profile?.user_email} />
+            <Info label="Role" value={profile?.role} />
           </div>
         )}
 
