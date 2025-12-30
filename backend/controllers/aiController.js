@@ -92,7 +92,27 @@ exports.analyzeHealth = async (req, res) => {
       aiResult.weeklyMeals
     );
 
-    // 6️ Save to AIFoodPlanDB
+    // 6 SAVE MASTER AI PLAN (SOURCE OF TRUTH)
+    await db.promise().query(
+      `
+  INSERT INTO ai_plan
+    (user_id, goal, daily_calories, plan_data, created_at)
+  VALUES (?, ?, ?, ?, NOW())
+  `,
+      [
+        userId,
+        goal,
+        aiResult.dailyCalories,
+        JSON.stringify({
+          ...aiResult,
+          weeklyMeals: weeklyMealsWithImages,
+          trainingStyle,
+          trainingDays
+        })
+      ]
+    );
+
+    // 7 Save to AIFoodPlanDB
     await db.promise().query(
       `
      INSERT INTO ai_food_plan
@@ -109,7 +129,7 @@ exports.analyzeHealth = async (req, res) => {
       ]
     );
 
-    // 6 Save to AItrainingplanDB
+    // 7 Save to AItrainingplanDB
     await db.promise().query(
       `
  INSERT INTO ai_training_plan
@@ -125,7 +145,7 @@ exports.analyzeHealth = async (req, res) => {
     );
 
 
-    // 7️ Return enriched result
+    // 8 Return enriched result
     res.json({
       dailyCalories: aiResult.dailyCalories,
       macros: aiResult.macros,

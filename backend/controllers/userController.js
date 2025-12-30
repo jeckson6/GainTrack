@@ -245,9 +245,9 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // 1️ Get user
+    // 1️⃣ Get user
     const [[user]] = await db.promise().query(
-      "SELECT password_hash FROM user  WHERE user_id = ?",
+      "SELECT password_hash FROM user WHERE user_id = ?",
       [userId]
     );
 
@@ -255,27 +255,39 @@ exports.changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2️ Verify current password
-    const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
+    // 2️⃣ Compare password (IMPORTANT FIX)
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password_hash   // ✅ correct column access
+    );
+
     if (!isMatch) {
       return res.status(401).json({ message: "Current password incorrect" });
     }
 
-    // 3️ Hash new password
+    // 3️⃣ Hash new password
     const newHash = await bcrypt.hash(newPassword, 10);
 
-    // 4️ Update DB
-    await db.promise().query(
-      "UPDATE Users SET password_hash  = ? WHERE user_id = ?",
+    // 4️⃣ Update password
+    const [result] = await db.promise().query(
+      "UPDATE user SET password_hash = ? WHERE user_id = ?",
       [newHash, userId]
     );
 
+    if (result.affectedRows === 0) {
+      return res.status(500).json({ message: "Password not updated" });
+    }
+
     res.json({ message: "Password updated successfully" });
+
   } catch (err) {
     console.error("CHANGE PASSWORD ERROR:", err);
     res.status(500).json({ message: "Password update failed" });
   }
 };
+
+
+
 exports.getAllUsersWithRole = async (req, res) => {
   try {
     const [rows] = await db.promise().query(`

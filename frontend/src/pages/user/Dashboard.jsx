@@ -15,12 +15,12 @@ export default function Dashboard() {
     if (!user) return;
 
     // profile (gender)
-    fetch(`http://localhost:5000/api/users/profile?userId=${user.UserID}`)
+    fetch(`http://localhost:5000/api/users/profile?userId=${user.user_id}`)
       .then(res => res.json())
       .then(setProfile);
 
     // health records
-    fetch(`http://localhost:5000/api/health?userId=${user.UserID}`)
+    fetch(`http://localhost:5000/api/health?userId=${user.user_id}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -87,8 +87,8 @@ export default function Dashboard() {
       color: isUp
         ? "text-red-600"
         : isDown
-        ? "text-green-600"
-        : "text-gray-500",
+          ? "text-green-600"
+          : "text-gray-500",
       unit
     };
   };
@@ -97,16 +97,16 @@ export default function Dashboard() {
 
   const weightTrend =
     previous && latest
-      ? getTrend(previous.Weight_kg, latest.Weight_kg, "kg")
+      ? getTrend(previous.weight_kg, latest.weight_kg, "kg")
       : null;
 
   const bodyFatTrend =
     previous && latest
       ? getTrend(
-          previous.BodyFatPercentage,
-          latest.BodyFatPercentage,
-          "%"
-        )
+        previous.body_fat_percentage,
+        latest.body_fat_percentage,
+        "%"
+      )
       : null;
 
   /* ======================
@@ -139,8 +139,8 @@ export default function Dashboard() {
             {/* BMI */}
             <div className="bg-white p-6 rounded-xl shadow">
               <h2 className="text-lg font-semibold mb-2">BMI Analysis</h2>
-              <p className="text-3xl font-bold mb-3">{latest.BMI}</p>
-              {bmiStatus(latest.BMI)}
+              <p className="text-3xl font-bold mb-3">{latest.bmi}</p>
+              {bmiStatus(latest.bmi)}
               <p className="text-sm text-gray-500 mt-3">
                 Body Mass Index based on your height and weight.
               </p>
@@ -152,13 +152,13 @@ export default function Dashboard() {
                 Body Fat Analysis
               </h2>
               <p className="text-3xl font-bold mb-3">
-                {latest.BodyFatPercentage
-                  ? `${latest.BodyFatPercentage}%`
+                {latest.body_fat_percentage
+                  ? `${latest.body_fat_percentage}%`
                   : "—"}
               </p>
               {bodyFatStatus(
-                latest.BodyFatPercentage,
-                profile?.Gender
+                latest.body_fat_percentage,
+                profile?.user_gender
               )}
               <p className="text-sm text-gray-500 mt-3">
                 Estimated using BMI, age, and gender.
@@ -175,17 +175,22 @@ export default function Dashboard() {
 
               <div className="space-y-4">
                 {/* WEIGHT */}
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Weight</span>
-                  <div className="flex items-center gap-3">
-                    <span>{weightTrend.before} kg</span>
-                    <span className="text-gray-400">→</span>
-                    <span>{weightTrend.now} kg</span>
-                    <span className={`font-semibold ${weightTrend.color}`}>
-                      {weightTrend.icon} {weightTrend.diff} kg
-                    </span>
+                {weightTrend && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Weight</span>
+
+                    <div className="flex items-center gap-3">
+                      <span>{weightTrend.before} kg</span>
+                      <span className="text-gray-400">→</span>
+                      <span>{weightTrend.now} kg</span>
+
+                      <span className={`font-semibold ${weightTrend.color}`}>
+                        {weightTrend.icon} {weightTrend.diff} kg
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
+
 
                 {/* BODY FAT */}
                 {bodyFatTrend && (

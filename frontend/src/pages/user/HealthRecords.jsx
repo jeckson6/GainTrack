@@ -1,12 +1,30 @@
 import React, { useEffect, useState } from "react";
 import HealthChart from "../../components/user/HealthChart";
 
+/* ======================
+   METRIC CARD
+====================== */
+function MetricCard({ label, value, color }) {
+  const colors = {
+    blue: "bg-blue-50 border-blue-200 text-blue-700",
+    purple: "bg-purple-50 border-purple-200 text-purple-700"
+  };
+
+  return (
+    <div className={`border rounded p-4 text-center ${colors[color]}`}>
+      <p className="text-sm">{label}</p>
+      <p className="text-2xl font-bold mt-1">{value}</p>
+    </div>
+  );
+}
+
 export default function HealthRecords() {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return null;
 
   const [profile, setProfile] = useState(null);
   const [records, setRecords] = useState([]);
+  const [message, setMessage] = useState(null);
 
   const [form, setForm] = useState({
     weight: "",
@@ -16,16 +34,17 @@ export default function HealthRecords() {
   });
 
   /* ======================
+     HEIGHT LOCK STATE
+  ====================== */
+  const [lockedHeight, setLockedHeight] = useState(null);
+  const canEditHeight = lockedHeight === null;
+  const effectiveHeight = canEditHeight ? form.height : lockedHeight;
+
+  /* ======================
      HELPERS
   ====================== */
-  const gender = profile?.Gender;
-  const dateOfBirth = profile?.DateOfBirth;
-
-  const firstRecordHeight =
-  records.length > 0 ? records[records.length - 1].Height_cm : null;
-
-  const hasHeight = !!firstRecordHeight;
-  const effectiveHeight = hasHeight ? firstRecordHeight : form.height;
+  const gender = profile?.user_gender;
+  const dateOfBirth = profile?.user_date_of_birth;
 
   const calculateAge = (dob) => {
     if (!dob) return null;
@@ -64,28 +83,93 @@ export default function HealthRecords() {
       : "";
 
   const finalBodyFat =
-    form.manualBodyFat !== ""
-      ? form.manualBodyFat
-      : estimatedBodyFat;
+    form.manualBodyFat !== "" ? form.manualBodyFat : estimatedBodyFat;
+
+  /* ======================
+     VALIDATION
+  ====================== */
+  const validateForm = () => {
+    if (!form.recordedDate) {
+      setMessage({ type: "error", text: "Please select a date." });
+      return false;
+    }
+
+    if (canEditHeight) {
+      if (!form.height) {
+        setMessage({
+          type: "error",
+          text: "Height is required for the first record."
+        });
+        return false;
+      }
+
+      if (form.height < 50 || form.height > 300) {
+        setMessage({
+          type: "error",
+          text: "Height must be between 50–300 cm."
+        });
+        return false;
+      }
+    }
+
+    if (!form.weight) {
+      setMessage({ type: "error", text: "Weight is required." });
+      return false;
+    }
+
+    if (form.weight < 20 || form.weight > 500) {
+      setMessage({
+        type: "error",
+        text: "Weight must be between 20–500 kg."
+      });
+      return false;
+    }
+
+    if (
+      form.manualBodyFat &&
+      (form.manualBodyFat < 2 || form.manualBodyFat > 70)
+    ) {
+      setMessage({
+        type: "error",
+        text: "Body fat percentage must be between 2–70%."
+      });
+      return false;
+    }
+
+    return true;
+  };
 
   /* ======================
      FETCH DATA
   ====================== */
   const refreshRecords = async () => {
     const res = await fetch(
-      `http://localhost:5000/api/health?userId=${user.UserID}`
+      `http://localhost:5000/api/health?userId=${user.user_id}`
     );
-    setRecords(await res.json());
+    const data = await res.json();
+
+    setRecords(data);
+
+    // 🔒 Find FIRST non-null height (baseline)
+    const firstHeightRecord = data.find(
+      (r) => r.height_cm !== null && r.height_cm !== undefined
+    );
+
+    if (firstHeightRecord) {
+      setLockedHeight(Number(firstHeightRecord.height_cm));
+    } else {
+      setLockedHeight(null);
+    }
   };
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users/profile?userId=${user.UserID}`
+          `http://localhost:5000/api/users/profile?userId=${user.user_id}`
         );
         if (res.ok) setProfile(await res.json());
-      } catch { }
+      } catch {}
 
       refreshRecords();
     };
@@ -98,14 +182,17 @@ export default function HealthRecords() {
   ====================== */
   const handleAddRecord = async (e) => {
     e.preventDefault();
+    setMessage(null);
+
+    if (!validateForm()) return;
 
     const res = await fetch("http://localhost:5000/api/health", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: user.UserID,
+        userId: user.user_id,
         weight: form.weight,
-        height: form.height,
+        height: effectiveHeight,
         bmi: calculatedBMI,
         bodyFat: finalBodyFat,
         recordedDate: form.recordedDate
@@ -113,7 +200,7 @@ export default function HealthRecords() {
     });
 
     if (!res.ok) {
-      alert("Failed to add record");
+      setMessage({ type: "error", text: "Failed to save health record." });
       return;
     }
 
@@ -125,6 +212,11 @@ export default function HealthRecords() {
     });
 
     refreshRecords();
+
+    setMessage({
+      type: "success",
+      text: "✅ Health record saved successfully!"
+    });
   };
 
   /* ======================
@@ -132,7 +224,6 @@ export default function HealthRecords() {
   ====================== */
   return (
     <div className="space-y-10 max-w-6xl mx-auto">
-      {/* HEADER */}
       <div>
         <h1 className="text-3xl font-bold">🩺 Health Records</h1>
         <p className="text-gray-600">
@@ -140,53 +231,28 @@ export default function HealthRecords() {
         </p>
       </div>
 
-      {/* CHART */}
       {records.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow">
           <HealthChart records={records} />
         </div>
       )}
 
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">
-          📅 Record History
-        </h2>
-
-        <div className="max-h-[300px] overflow-y-auto border rounded">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100 sticky top-0">
-              <tr className="text-gray-600 uppercase text-xs">
-                <th className="p-3 text-left">Date</th>
-                <th className="p-3 text-center">Weight (kg)</th>
-                <th className="p-3 text-center">BMI</th>
-                <th className="p-3 text-center">Body Fat %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((r) => (
-                <tr
-                  key={r.RecordID}
-                  className="border-t text-center hover:bg-gray-50"
-                >
-                  <td className="p-3 text-left">
-                    {r.RecordedDate.split("T")[0]}
-                  </td>
-                  <td className="p-3">{r.Weight_kg}</td>
-                  <td className="p-3">{r.BMI}</td>
-                  <td className="p-3">{r.BodyFatPercentage}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ADD FORM */}
       <div className="bg-white rounded-xl shadow p-6">
         <h2 className="text-lg font-semibold mb-4">
           ➕ Add New Health Record
         </h2>
+
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded text-sm font-medium ${
+              message.type === "success"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
 
         <form
           onSubmit={handleAddRecord}
@@ -202,128 +268,61 @@ export default function HealthRecords() {
             required
           />
 
-          {/* ======================
-    BASE PROFILE METRICS
-====================== */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-6">
-
-              {/* Height */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Height (cm)
-                </label>
-                <input
-                  type="text"
-                  value={firstRecordHeight || form.height || ""}
-                  disabled
-                  className="w-full border p-2 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Baseline value
-                </p>
-              </div>
-
-              {/* Age */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Age
-                </label>
-                <input
-                  type="text"
-                  value={age ? `${age} years` : "—"}
-                  disabled
-                  className="w-full border p-2 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
-                />
-                {!age && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Requires date of birth
-                  </p>
-                )}
-              </div>
-
-              {/* Gender */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender
-                </label>
-                <input
-                  type="text"
-                  value={gender || "—"}
-                  disabled
-                  className="w-full border p-2 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
-                />
-                {!gender && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Set in profile
-                  </p>
-                )}
-              </div>
-
-            </div>
+          {/* HEIGHT */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Height (cm)
+            </label>
+            <input
+              type="number"
+              value={canEditHeight ? form.height : lockedHeight}
+              onChange={(e) =>
+                setForm({ ...form, height: e.target.value })
+              }
+              disabled={!canEditHeight}
+              className={`w-full border p-2 rounded ${
+                canEditHeight
+                  ? ""
+                  : "bg-gray-100 text-gray-600 cursor-not-allowed"
+              }`}
+              placeholder="Enter height"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {canEditHeight
+                ? "Set once as baseline"
+                : "Baseline value (locked)"}
+            </p>
           </div>
 
-
-          <div className="flex justify-center">
-            <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              {/* Weight */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  className="border p-2 w-full rounded"
-                  value={form.weight}
-                  onChange={(e) =>
-                    setForm({ ...form, weight: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-
-            </div>
+          {/* WEIGHT */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Weight (kg)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              className="border p-2 w-full rounded"
+              value={form.weight}
+              onChange={(e) =>
+                setForm({ ...form, weight: e.target.value })
+              }
+              required
+            />
           </div>
 
-
-
-          {/* CALCULATIONS */}
           {form.weight && effectiveHeight && (
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <MetricCard
                 label="BMI"
                 value={calculatedBMI}
                 color="blue"
               />
-
               <MetricCard
-                label={`Body Fat % ${form.manualBodyFat ? "(Manual)" : "(Estimated)"
-                  }`}
+                label="Body Fat %"
                 value={finalBodyFat ? `${finalBodyFat}%` : "--"}
                 color="purple"
               />
-
-              <input
-                type="number"
-                step="0.1"
-                placeholder="Manual body fat % (optional)"
-                className="border p-2 rounded md:col-span-2"
-                value={form.manualBodyFat}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    manualBodyFat: e.target.value
-                  })
-                }
-              />
-
-              <p className="text-xs text-gray-500 text-center md:col-span-2">
-                Values are automatically calculated to help users who are
-                unfamiliar with manual formulas.
-              </p>
             </div>
           )}
 
@@ -332,25 +331,6 @@ export default function HealthRecords() {
           </button>
         </form>
       </div>
-    </div>
-  );
-}
-
-/* ======================
-   METRIC CARD
-====================== */
-function MetricCard({ label, value, color }) {
-  const colors = {
-    blue: "bg-blue-50 border-blue-200 text-blue-700",
-    purple: "bg-purple-50 border-purple-200 text-purple-700"
-  };
-
-  return (
-    <div
-      className={`border rounded p-4 text-center ${colors[color]}`}
-    >
-      <p className="text-sm">{label}</p>
-      <p className="text-2xl font-bold mt-1">{value}</p>
     </div>
   );
 }

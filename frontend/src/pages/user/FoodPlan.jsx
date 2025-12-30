@@ -8,7 +8,7 @@ export default function FoodPlan() {
 
   useEffect(() => {
     fetch(
-      `http://localhost:5000/api/food-plan/latest?userId=${user.UserID}`
+      `http://localhost:5000/api/food-plan/latest?userId=${user.user_id}`
     )
       .then((res) => res.json())
       .then(setPlan);
@@ -17,7 +17,7 @@ export default function FoodPlan() {
   if (!plan) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
-        No food plan found.
+       Food Plan haven't generated yet.
       </div>
     );
   }

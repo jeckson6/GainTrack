@@ -40,9 +40,9 @@ export default function TopNavbar({ toggleSidebar }) {
   // ======================
   const avatar =
     profile?.profile_image_url ||
-    (profile?.gender === "Male"
+    (profile?.user_gender === "Male"
       ? maleAvatar
-      : profile?.gender === "Female"
+      : profile?.user_gender === "Female"
       ? femaleAvatar
       : otherAvatar);
 

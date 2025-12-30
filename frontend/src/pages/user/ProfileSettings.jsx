@@ -3,6 +3,45 @@ import React, { useEffect, useState } from "react";
 export default function ProfileSettings() {
   const user = JSON.parse(localStorage.getItem("user"));
 
+  const nameRegex = /^[A-Za-z\s]+$/;
+  const phoneRegex = /^[0-9]{9,12}$/; // Malaysia safe range
+
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const e = {};
+
+    if (!form.firstName.trim()) {
+      e.firstName = "First name is required";
+    } else if (!nameRegex.test(form.firstName)) {
+      e.firstName = "First name cannot contain numbers or symbols";
+    }
+
+    if (!form.lastName.trim()) {
+      e.lastName = "Last name is required";
+    } else if (!nameRegex.test(form.lastName)) {
+      e.lastName = "Last name cannot contain numbers or symbols";
+    }
+
+    if (!form.gender) {
+      e.gender = "Gender is required";
+    }
+
+    if (!form.contact.trim()) {
+      e.contact = "Contact number is required";
+    } else if (!phoneRegex.test(form.contact)) {
+      e.contact = "Contact must contain 9–12 digits only";
+    }
+
+    if (!form.dateOfBirth) {
+      e.dateOfBirth = "Date of birth is required";
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -21,7 +60,7 @@ export default function ProfileSettings() {
      LOAD PROFILE
   ====================== */
   useEffect(() => {
-    fetch(`http://localhost:5000/api/users/profile?userId=${user.UserID}`)
+    fetch(`http://localhost:5000/api/users/profile?userId=${user.user_id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load profile");
         return res.json();
@@ -29,26 +68,28 @@ export default function ProfileSettings() {
       .then((data) => {
         if (data) {
           setForm({
-            firstName: data.FirstName || "",
-            lastName: data.LastName || "",
-            gender: data.Gender || "Male",
-            contact: data.Contact || "",
-            dateOfBirth: data.DateOfBirth?.slice(0, 10) || ""
+            firstName: data.user_first_name || "",
+            lastName: data.user_last_name || "",
+            gender: data.user_gender || "Male",
+            contact: data.user_contact || "",
+            dateOfBirth: data.user_date_of_birth?.slice(0, 10) || ""
           });
         }
       })
       .catch(console.error);
-  }, [user.UserID]);
+  }, [user.user_id]);
 
   /* ======================
      SAVE PROFILE
   ====================== */
   const saveProfile = async () => {
+    if (!validateForm()) return;
+
     await fetch("http://localhost:5000/api/users/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: user.UserID,
+        userId: user.user_id,
         ...form
       })
     });
@@ -61,19 +102,36 @@ export default function ProfileSettings() {
      CHANGE PASSWORD
   ====================== */
   const changePassword = async () => {
-    await fetch("http://localhost:5000/api/users/password/change", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.UserID,
-        currentPassword: passwords.current,
-        newPassword: passwords.new
-      })
-    });
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/users/password/change",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.user_id,
+            currentPassword: passwords.current,
+            newPassword: passwords.new
+          })
+        }
+      );
 
-    alert("Password updated 🔒");
-    setPasswords({ current: "", new: "", show: false });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Password change failed");
+        return;
+      }
+
+      alert("Password updated 🔒");
+      setPasswords({ current: "", new: "", show: false });
+
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -96,7 +154,7 @@ export default function ProfileSettings() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="First Name" desc="Your given name">
+          <Field label="First Name" desc="Your given name" error={errors.firstName}>
             <input
               value={form.firstName}
               onChange={(e) =>
@@ -105,7 +163,7 @@ export default function ProfileSettings() {
             />
           </Field>
 
-          <Field label="Last Name" desc="Your family name">
+          <Field label="Last Name" desc="Your family name" error={errors.lastName}>
             <input
               value={form.lastName}
               onChange={(e) =>
@@ -132,7 +190,7 @@ export default function ProfileSettings() {
 
           <Field
             label="Contact Number"
-            desc="For account recovery & notifications"
+            desc="For account recovery & notifications" error={errors.contact}
           >
             <input
               value={form.contact}
@@ -224,14 +282,23 @@ export default function ProfileSettings() {
 /* ======================
    FIELD COMPONENT
 ====================== */
-function Field({ label, desc, children }) {
+function Field({ label, desc, error, children }) {
   return (
     <div>
       <label className="text-sm font-medium">{label}</label>
       <p className="text-xs text-gray-500 mb-1">{desc}</p>
+
       {React.cloneElement(children, {
-        className: "w-full border p-2 rounded"
+        className: `w-full border p-2 rounded ${
+          error ? "border-red-500" : ""
+        }`
       })}
+
+      {error && (
+        <p className="text-xs text-red-600 mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -16,14 +16,14 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(false);
 
   const days = [
-    "Monday","Tuesday","Wednesday",
-    "Thursday","Friday","Saturday","Sunday"
+    "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday", "Sunday"
   ];
   const [selectedDay, setSelectedDay] = useState("Monday");
 
   useEffect(() => {
     fetch(
-      `http://localhost:5000/api/ai/health-summary?userId=${user.UserID}`
+      `http://localhost:5000/api/ai/health-summary?userId=${user.user_id}`
     )
       .then(res => res.json())
       .then(setHealth);
@@ -36,7 +36,7 @@ export default function AIAssistant() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: user.UserID,
+        userId: user.user_id,
         goal,
         trainingStyle,
         trainingDays
@@ -75,12 +75,16 @@ export default function AIAssistant() {
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPIStatCard title="Height" value={`${health.Height_cm} cm`} />
-            <KPIStatCard title="Weight" value={`${health.Weight_kg} kg`} />
-            <KPIStatCard title="BMI" value={health.BMI} />
+            <KPIStatCard title="Height" value={`${health.height_cm} cm`} />
+            <KPIStatCard title="Weight" value={`${health.weight_kg} kg`} />
+            <KPIStatCard title="BMI" value={health.bmi} />
             <KPIStatCard
               title="Body Fat"
-              value={`${health.BodyFatPercentage}%`}
+              value={
+                health.body_fat_percentage !== null
+                  ? `${health.body_fat_percentage}%`
+                  : "N/A"
+              }
             />
           </div>
         </div>
@@ -151,10 +155,9 @@ export default function AIAssistant() {
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 className={`px-4 py-1.5 rounded-full text-sm
-                  ${
-                    selectedDay === day
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
+                  ${selectedDay === day
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
                   }`}
               >
                 {day}
