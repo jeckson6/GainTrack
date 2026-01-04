@@ -1,17 +1,35 @@
-export function generateCalendarLink(trainingPlan) {
-  if (!Array.isArray(trainingPlan) || trainingPlan.length === 0) {
-    return "#";
-  }
+export function generateCalendarLink(trainingPlan = []) {
+  if (!Array.isArray(trainingPlan)) return "#";
 
-  const title = encodeURIComponent("Weekly Training Plan - GainTrack");
+  const events = trainingPlan.map((day) => {
+    const exercisesText = Array.isArray(day.exercises)
+      ? day.exercises
+          .map(
+            (ex) =>
+              `• ${ex.name} — ${ex.sets} sets x ${ex.reps}` +
+              (ex.rest ? ` (Rest ${ex.rest})` : "")
+          )
+          .join("\n")
+      : "";
 
-  const details = encodeURIComponent(
-    trainingPlan
-      .map(day => {
-        return `${day.day} (${day.focus})\n${day.exercises.join("\n")}`;
-      })
-      .join("\n\n")
-  );
+    const description = `${day.focus}\n\n${exercisesText}`;
 
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`;
+    return {
+      text: `Workout: ${day.day}`,
+      details: description
+    };
+  });
+
+  // Google Calendar URL (single combined event)
+  const fullDescription = events
+    .map((e) => `${e.text}\n${e.details}`)
+    .join("\n\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: "AI Training Plan",
+    details: fullDescription
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }

@@ -7,14 +7,17 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_KEY
 });
 
+// ================================
 // helper: attach images permanently
+// ================================
 async function attachImagesToMealPlan(weeklyMeals) {
+  if (!weeklyMeals || typeof weeklyMeals !== "object") return weeklyMeals;
+
   for (const day of Object.keys(weeklyMeals)) {
     for (const meal of weeklyMeals[day]) {
       if (!Array.isArray(meal.foods)) continue;
 
       for (const food of meal.foods) {
-        // if image is NOT a URL, replace it
         if (!food.image || !food.image.startsWith("http")) {
           food.image = await getFoodImage(food.item);
         }
@@ -31,20 +34,18 @@ exports.analyzeHealth = async (req, res) => {
   try {
     const { userId, goal, trainingStyle, trainingDays } = req.body;
 
-    // 1️ Load user profile
+    if (!userId || !goal || !trainingStyle || !trainingDays) {
+      return res.status(400).json({ message: "Missing required AI inputs" });
+    }
+
     const [[profile]] = await db.promise().query(
-      "SELECT user_gender FROM user_profile WHERE user_id  = ?",
+      "SELECT user_gender FROM user_profile WHERE user_id = ?",
       [userId]
     );
 
-    // 2️ Load latest health record
     const [[record]] = await db.promise().query(
       `
-       SELECT
-        height_cm,
-        weight_kg,
-        bmi,
-        body_fat_percentage
+      SELECT height_cm, weight_kg, bmi, body_fat_percentage
       FROM health_record
       WHERE user_id = ?
       ORDER BY recorded_date DESC
@@ -57,66 +58,35 @@ exports.analyzeHealth = async (req, res) => {
       return res.status(400).json({ message: "Health data incomplete" });
     }
 
-    // 3️ Build AI prompt
     const prompt = buildAIPrompt({
-      gender: profile.Gender,
-      height: record.Height_cm,
-      weight: record.Weight_kg,
-      bmi: record.BMI,
-      bodyFat: record.BodyFatPercentage,
+      gender: profile.user_gender,
+      height: record.height_cm,
+      weight: record.weight_kg,
+      bmi: record.bmi,
+      bodyFat: record.body_fat_percentage,
       goal,
       trainingStyle,
       trainingDays
     });
 
-    // 4️ Call OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4
     });
 
-    const aiResult = JSON.parse(
-      response.choices[0].message.content
-    );
+    const aiResult = JSON.parse(response.choices[0].message.content);
 
-    if (
-      Array.isArray(aiResult.trainingPlan) &&
-      typeof trainingDays === "number"
-    ) {
-      aiResult.trainingPlan = aiResult.trainingPlan.slice(0, trainingDays);
-    }
-
-    // 5️ Attach images (ONCE, permanent)
     const weeklyMealsWithImages = await attachImagesToMealPlan(
       aiResult.weeklyMeals
     );
 
-    // 6 SAVE MASTER AI PLAN (SOURCE OF TRUTH)
-    await db.promise().query(
-      `
-  INSERT INTO ai_plan
-    (user_id, goal, daily_calories, plan_data, created_at)
-  VALUES (?, ?, ?, ?, NOW())
-  `,
-      [
-        userId,
-        goal,
-        aiResult.dailyCalories,
-        JSON.stringify({
-          ...aiResult,
-          weeklyMeals: weeklyMealsWithImages,
-          trainingStyle,
-          trainingDays
-        })
-      ]
-    );
 
-    // 7 Save to AIFoodPlanDB
+    // ai_food_plan
     await db.promise().query(
       `
-     INSERT INTO ai_food_plan
-      (user_id, daily_calories, protein_g, carbs_g, fats_g, meal_plan, created_at)
+      INSERT INTO ai_food_plan
+        (user_id, daily_calories, protein_g, carbs_g, fats_g, meal_plan, created_at)
       VALUES (?, ?, ?, ?, ?, ?, NOW())
       `,
       [
@@ -129,23 +99,21 @@ exports.analyzeHealth = async (req, res) => {
       ]
     );
 
-    // 7 Save to AItrainingplanDB
+    // ai_training_plan
     await db.promise().query(
       `
- INSERT INTO ai_training_plan
-      (user_id, plan_type, training_method, weekly_schedule, created_at)
-      VALUES (?, ?, ?, ?, NOW())
+  INSERT INTO ai_training_plan
+    (user_id, plan_type, training_method, weekly_schedule, created_at)
+  VALUES (?, ?, ?, ?, NOW())
   `,
       [
         userId,
-        goal,                     // Bulking / Cutting / Maintenance
-        trainingStyle,            // ppl / upper_lower / full_body
+        goal,
+        trainingStyle,
         JSON.stringify(aiResult.trainingPlan)
       ]
     );
 
-
-    // 8 Return enriched result
     res.json({
       dailyCalories: aiResult.dailyCalories,
       macros: aiResult.macros,
@@ -153,12 +121,9 @@ exports.analyzeHealth = async (req, res) => {
       trainingPlan: aiResult.trainingPlan
     });
 
-    console.log("TRAINING INPUT:", trainingStyle, trainingDays);
-
-
   } catch (err) {
-    console.error("AI ERROR:", err);
-    res.status(500).json({ message: "AI generation failed" });
+    console.error("AI / DB ERROR:", err);
+    res.status(500).json({ message: err.sqlMessage || "AI generation failed" });
   }
 };
 
@@ -170,13 +135,13 @@ exports.getHealthSummary = async (req, res) => {
     const { userId } = req.query;
 
     const [[profile]] = await db.promise().query(
-      "SELECT user_gender FROM user_profile WHERE user_id  = ?",
+      "SELECT user_gender FROM user_profile WHERE user_id = ?",
       [userId]
     );
 
     const [[record]] = await db.promise().query(
       `
-     SELECT
+      SELECT
         height_cm,
         weight_kg,
         bmi,
@@ -192,11 +157,13 @@ exports.getHealthSummary = async (req, res) => {
     if (!record) return res.json(null);
 
     res.json({
-      gender: profile?.Gender || "Unknown",
+      gender: profile?.user_gender || "Unknown",
       ...record
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to load health summary" });
+    res.status(500).json({
+      message: "Failed to load health summary"
+    });
   }
 };

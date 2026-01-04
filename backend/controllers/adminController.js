@@ -1,4 +1,3 @@
-// backend/controllers/adminController.js
 const db = require("../config/db");
 const logAction = require("../utils/logAction");
 const bcrypt = require("bcryptjs");
@@ -414,7 +413,7 @@ exports.removeAdmin = async (req, res) => {
 
     // Check target is admin
     const [[target]] = await db.promise().query(
-      "SELECT admin_id  FROM admin  WHERE UserID = ?",
+      "SELECT admin_id  FROM admin  WHERE user_id = ?",
       [userId]
     );
 
@@ -575,8 +574,8 @@ exports.getAnnouncement = async (req, res) => {
   `);
 
   res.json({
-    announcement: row?.ConfigValue || "",
-    expiresAt: row?.ExpiresAt || null
+    announcement: row?.config_value || "",
+    expiresAt: row?.expires_at || null
   });
 };
 
@@ -587,12 +586,13 @@ exports.getSystemLogs = async (req, res) => {
       l.action,
       l.target,
       l.created_at,
-      u.user_email AS admin_email
+      u.user_email
     FROM systemlogs l
-    JOIN user u ON u.user_id = l.admin_user_id
+    JOIN user u ON u.user_id = l.user_id
     ORDER BY l.created_at DESC
     LIMIT 20
   `);
 
   res.json(logs);
 };
+

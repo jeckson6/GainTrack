@@ -41,10 +41,13 @@ export default function HealthRecords() {
   const effectiveHeight = canEditHeight ? form.height : lockedHeight;
 
   /* ======================
-     HELPERS
+     HELPERS (DECLARE FIRST)
   ====================== */
-  const gender = profile?.user_gender;
-  const dateOfBirth = profile?.user_date_of_birth;
+  const calculateBMI = (weight, heightCm) => {
+    if (!weight || !heightCm) return "";
+    const h = heightCm / 100;
+    return (weight / (h * h)).toFixed(1);
+  };
 
   const calculateAge = (dob) => {
     if (!dob) return null;
@@ -61,23 +64,20 @@ export default function HealthRecords() {
     return age;
   };
 
-  const age = calculateAge(dateOfBirth);
- const calculatedBMI = calculateBMI(form.weight, effectiveHeight);
-  /* ======================
-     BUSINESS LOGIC
-  ====================== */
-  const calculateBMI = (weight, heightCm) => {
-    if (!weight || !heightCm) return "";
-    const h = heightCm / 100;
-    return (weight / (h * h)).toFixed(1);
-  };
-
-
   const estimateBodyFat = (bmi, age, gender) => {
     if (!bmi || !age || !gender) return "";
     const g = gender === "Male" ? 1 : 0;
     return (1.2 * bmi + 0.23 * age - 10.8 * g - 5.4).toFixed(1);
   };
+
+  /* ======================
+     DERIVED VALUES
+  ====================== */
+  const gender = profile?.user_gender;
+  const dateOfBirth = profile?.user_date_of_birth;
+
+  const age = calculateAge(dateOfBirth);
+  const calculatedBMI = calculateBMI(form.weight, effectiveHeight);
 
   const estimatedBodyFat =
     calculatedBMI && age && gender
@@ -152,7 +152,7 @@ export default function HealthRecords() {
 
     setRecords(data);
 
-    // 🔒 Find FIRST non-null height (baseline)
+    //  Find FIRST non-null height (baseline)
     const firstHeightRecord = data.find(
       (r) => r.height_cm !== null && r.height_cm !== undefined
     );
@@ -247,8 +247,8 @@ export default function HealthRecords() {
         {message && (
           <div
             className={`mb-4 p-3 rounded text-sm font-medium ${message.type === "success"
-                ? "bg-green-100 text-green-700 border border-green-300"
-                : "bg-red-100 text-red-700 border border-red-300"
+              ? "bg-green-100 text-green-700 border border-green-300"
+              : "bg-red-100 text-red-700 border border-red-300"
               }`}
           >
             {message.text}
@@ -282,8 +282,8 @@ export default function HealthRecords() {
               }
               disabled={!canEditHeight}
               className={`w-full border p-2 rounded ${canEditHeight
-                  ? ""
-                  : "bg-gray-100 text-gray-600 cursor-not-allowed"
+                ? ""
+                : "bg-gray-100 text-gray-600 cursor-not-allowed"
                 }`}
               placeholder="Enter height"
             />
@@ -311,6 +311,8 @@ export default function HealthRecords() {
             />
           </div>
 
+
+
           {form.weight && effectiveHeight && (
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <MetricCard
@@ -325,6 +327,27 @@ export default function HealthRecords() {
               />
             </div>
           )}
+          {/* BODY FAT (OPTIONAL MANUAL INPUT) */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Body Fat % (optional)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min="2"
+              max="70"
+              className="border p-2 w-full rounded"
+              placeholder="Leave empty to auto-calculate"
+              value={form.manualBodyFat}
+              onChange={(e) =>
+                setForm({ ...form, manualBodyFat: e.target.value })
+              }
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated if left empty
+            </p>
+          </div>
 
           <button className="md:col-span-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded">
             Save Health Record

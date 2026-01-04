@@ -115,9 +115,9 @@ export default function AIAssistant() {
           onChange={(e) => setTrainingStyle(e.target.value)}
         >
           <option value="">Training style</option>
-          <option value="ppl">Push / Pull / Legs</option>
-          <option value="upper_lower">Upper / Lower</option>
-          <option value="full_body">Full Body</option>
+          <option value="Push Pull Legs">Push / Pull / Legs</option>
+          <option value="Upper Lower">Upper / Lower</option>
+          <option value="Full Body">Full Body</option>
         </select>
 
         <select
