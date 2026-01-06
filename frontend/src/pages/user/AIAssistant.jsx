@@ -6,14 +6,41 @@ import { generateCalendarLink } from "../../components/user/TrainingCalendar";
 
 export default function AIAssistant() {
   const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.user_id;
 
+  const [profile, setProfile] = useState(null);
   const [health, setHealth] = useState(null);
   const [goal, setGoal] = useState("");
   const [trainingStyle, setTrainingStyle] = useState("");
-  const [trainingDays, setTrainingDays] = useState(4);
+  const [trainingDays, setTrainingDays] = useState(null);
 
   const [aiResult, setAIResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+
+    const birthDate = new Date(dob);
+    const today = new Date();
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const age = calculateAge(profile?.user_date_of_birth);
+
+  const canUseAI =
+    goal &&
+    trainingStyle &&
+    trainingDays &&
+    profile?.user_gender &&
+    profile?.user_date_of_birth;
 
   const days = [
     "Monday", "Tuesday", "Wednesday",
@@ -29,7 +56,28 @@ export default function AIAssistant() {
       .then(setHealth);
   }, []);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`http://localhost:5000/api/users/profile?userId=${userId}`)
+      .then(res => res.json())
+      .then(data => setProfile(data))
+      .catch(err => console.error(err));
+
+  }, [userId]);
+
   const analyzeHealth = async () => {
+    if (!goal || !trainingStyle || !trainingDays) {
+      setError("Please select goal, training style, and training frequency.");
+      return;
+    }
+
+    if (!profile?.user_gender || !profile?.user_date_of_birth) {
+      setError("Please complete your gender and date of birth in Profile.");
+      return;
+    }
+
+    setError("");
     setLoading(true);
 
     const res = await fetch("http://localhost:5000/api/ai/analyze", {
@@ -66,79 +114,146 @@ export default function AIAssistant() {
       </div>
 
       {/* ======================
-          HEALTH SNAPSHOT
-      ====================== */}
+    HEALTH SNAPSHOT
+====================== */}
       {health && (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            📊 Health Snapshot
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPIStatCard title="Height" value={`${health.height_cm} cm`} />
-            <KPIStatCard title="Weight" value={`${health.weight_kg} kg`} />
-            <KPIStatCard title="BMI" value={health.bmi} />
-            <KPIStatCard
-              title="Body Fat"
-              value={
-                health.body_fat_percentage !== null
-                  ? `${health.body_fat_percentage}%`
-                  : "N/A"
-              }
-            />
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <KPIStatCard
+            title="Gender"
+            value={profile?.user_gender || "N/A"}
+          />
+          <KPIStatCard
+            title="Age"
+            value={age ? `${age} yrs` : "N/A"}
+          />
+          <KPIStatCard title="Height" value={`${health.height_cm} cm`} />
+          <KPIStatCard title="Weight" value={`${health.weight_kg} kg`} />
+          <KPIStatCard title="BMI" value={health.bmi} />
+          <KPIStatCard
+            title="Body Fat"
+            value={
+              health.body_fat_percentage !== null
+                ? `${health.body_fat_percentage}%`
+                : "N/A"
+            }
+          />
         </div>
+
       )}
 
+
       {/* ======================
-          AI PREFERENCES
-      ====================== */}
+    AI PREFERENCES
+====================== */}
       <div className="bg-white rounded-xl shadow p-6 max-w-xl">
-        <h2 className="text-lg font-semibold mb-4">
+        <h2 className="text-lg font-semibold mb-6">
           ⚙️ AI Preferences
         </h2>
 
-        <select
-          className="w-full border p-3 rounded mb-3"
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-        >
-          <option value="">Select goal</option>
-          <option value="Bulking">Bulking</option>
-          <option value="Maintain">Maintain</option>
-          <option value="Cutting">Cutting</option>
-        </select>
+        <div className="space-y-5">
 
-        <select
-          className="w-full border p-3 rounded mb-3"
-          value={trainingStyle}
-          onChange={(e) => setTrainingStyle(e.target.value)}
-        >
-          <option value="">Training style</option>
-          <option value="Push Pull Legs">Push / Pull / Legs</option>
-          <option value="Upper Lower">Upper / Lower</option>
-          <option value="Full Body">Full Body</option>
-        </select>
+          {/* GOAL */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div className="md:col-span-1">
+              <p className="font-medium">Fitness Goal</p>
+              <p className="text-sm text-gray-500">
+                Select your primary objective
+              </p>
+            </div>
 
-        <select
-          className="w-full border p-3 rounded mb-4"
-          value={trainingDays}
-          onChange={(e) => setTrainingDays(Number(e.target.value))}
-        >
-          <option value={3}>3 days / week</option>
-          <option value={4}>4 days / week</option>
-          <option value={5}>5 days / week</option>
-          <option value={6}>6 days / week</option>
-        </select>
+            <div className="md:col-span-2">
+              <select
+                className="w-full border p-3 rounded"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+              >
+                <option value="">Select goal</option>
+                <option value="Bulking">Bulking (Muscle Gain)</option>
+                <option value="Maintain">Maintain (Balanced)</option>
+                <option value="Cutting">Cutting (Fat Loss)</option>
+              </select>
+            </div>
+          </div>
 
-        <button
-          onClick={analyzeHealth}
-          disabled={!goal || !trainingStyle || loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded"
-        >
-          {loading ? "Analyzing with AI..." : "Generate AI Plan"}
-        </button>
+          {/* TRAINING STYLE */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div className="md:col-span-1">
+              <p className="font-medium">Training Style</p>
+              <p className="text-sm text-gray-500">
+                Preferred workout structure
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <select
+                className="w-full border p-3 rounded"
+                value={trainingStyle}
+                onChange={(e) => setTrainingStyle(e.target.value)}
+              >
+                <option value="">Select training style</option>
+                <option value="Push Pull Legs">Push / Pull / Legs</option>
+                <option value="Upper Lower">Upper / Lower</option>
+                <option value="Full Body">Full Body</option>
+              </select>
+            </div>
+          </div>
+
+          {/* TRAINING DAYS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div className="md:col-span-1">
+              <p className="font-medium">Training Frequency</p>
+              <p className="text-sm text-gray-500">
+                Days you can train per week
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <select
+                className="w-full border p-3 rounded"
+                value={trainingDays ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setTrainingDays(value ? Number(value) : null);
+                }}
+              >
+                <option value="">Select training frequency</option>
+                <option value="3">3 days / week</option>
+                <option value="4">4 days / week</option>
+                <option value="5">5 days / week</option>
+                <option value="6">6 days / week</option>
+              </select>
+            </div>
+          </div>
+
+          {/* WARNING MESSAGE */}
+          {(!profile?.user_gender || !profile?.user_date_of_birth) && (
+            <p className="text-sm text-red-500 mt-2">
+              Please complete your gender and date of birth in Profile before using AI.
+            </p>
+          )}
+
+          {/* ACTION BUTTON */}
+          <button
+            onClick={analyzeHealth}
+            disabled={!canUseAI || loading}
+            className={`w-full py-3 rounded mt-4 text-white
+    ${(!canUseAI || loading)
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
+          >
+            {loading ? "Analyzing with AI..." : "Generate AI Plan"}
+          </button>
+
+          {/* VALIDATION MESSAGE */}
+          {error && (
+            <p className="text-sm text-red-500 mt-2">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
+
 
       {/* ======================
           FOOD PLAN

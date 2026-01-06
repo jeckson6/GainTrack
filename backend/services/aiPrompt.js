@@ -8,11 +8,37 @@ DO NOT wrap with backticks.
 DO NOT include explanations or comments.
 
 =====================
+CORE DECISION RULES
+=====================
+You MUST tailor all recommendations based on:
+- User gender: "${context.gender}"
+- User age: ${context.age}
+
+Use gender and age to adjust:
+- Daily calorie estimation
+- Macronutrient distribution
+- Training volume and intensity
+- Exercise selection and recovery needs
+
+Older users should have:
+- Slightly lower volume
+- Emphasis on recovery and joint-friendly movements
+
+Younger users may tolerate:
+- Higher training volume
+- Slightly higher intensity
+
+=====================
 MEAL PLAN RULES
 =====================
 - Generate a 7-day meal plan (Monday to Sunday)
 - Meals MUST be different across days
 - Foods should be realistic and commonly available
+- Adjust portion sizes and calories according to:
+  - age
+  - gender
+  - goal: "${context.goal}"
+
 - Image field MUST be a short food keyword (NOT a URL)
   Example: "grilled chicken", "oatmeal", "salmon bowl"
 
@@ -24,11 +50,11 @@ TRAINING PLAN RULES
 - Training days per week: ${context.trainingDays}
 - Number of training days MUST equal trainingDays
 - DO NOT generate extra training days
-- Training style output MUST match the user-selected style wording
+- Training style output MUST match user-selected wording exactly
 
 Each training day MUST include:
 - day label (e.g. "Day 1")
-- focus (e.g. "Push", "Pull", "Legs", "Chest + Triceps")
+- focus (e.g. "Push", "Pull", "Legs", "Upper Body")
 - a list of exercises
 
 Each exercise MUST include:
@@ -37,16 +63,17 @@ Each exercise MUST include:
 - reps
 - optional rest time
 
-Allowed styles include:
+Allowed styles:
 - Push / Pull / Legs
 - Upper / Lower
 - Full Body
 
 Rules:
-- DO NOT fix muscle groups to specific weekdays unless logical
-- Allow natural variations (Push, Pull, Chest, Legs, etc.)
+- DO NOT lock muscle groups to fixed weekdays unless logical
+- Allow natural focus variations (Push, Pull, Chest, Legs, etc.)
 - Include rest days ONLY if trainingDays < 7
 - Do NOT repeat identical workouts
+- Adjust volume and recovery according to age and gender
 
 =====================
 JSON SCHEMA
@@ -106,8 +133,9 @@ USER CONTEXT
 ${JSON.stringify(context)}
 
 Important:
+- Gender and age MUST influence all planning decisions
 - Number of training days MUST match user selection
-- Training must dynamically adapt to user goal and preferences
+- Plans must adapt dynamically to user goal, age, and gender
 `;
 }
 

@@ -70,6 +70,8 @@ export default function HealthRecords() {
     return (1.2 * bmi + 0.23 * age - 10.8 * g - 5.4).toFixed(1);
   };
 
+
+
   /* ======================
      DERIVED VALUES
   ====================== */
@@ -86,7 +88,7 @@ export default function HealthRecords() {
 
   const finalBodyFat =
     form.manualBodyFat !== "" ? form.manualBodyFat : estimatedBodyFat;
-
+  const canAutoCalculateBodyFat = Boolean(gender && age);
   /* ======================
      VALIDATION
   ====================== */
@@ -332,22 +334,36 @@ export default function HealthRecords() {
             <label className="block text-sm font-medium mb-1">
               Body Fat % (optional)
             </label>
+
             <input
               type="number"
               step="0.1"
               min="2"
               max="70"
               className="border p-2 w-full rounded"
-              placeholder="Leave empty to auto-calculate"
+              placeholder={
+                canAutoCalculateBodyFat
+                  ? "Leave empty to auto-calculate"
+                  : "Complete profile's gender and age to enable auto-calculation"
+              }
               value={form.manualBodyFat}
               onChange={(e) =>
                 setForm({ ...form, manualBodyFat: e.target.value })
               }
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated if left empty
-            </p>
+
+            {!canAutoCalculateBodyFat ? (
+              <p className="text-xs text-yellow-600 mt-1">
+                ⚠️ Body fat auto-calculation requires gender and date of birth.
+                Please complete your profile.
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                Auto-calculated if left empty.
+              </p>
+            )}
           </div>
+
 
           <button className="md:col-span-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded">
             Save Health Record

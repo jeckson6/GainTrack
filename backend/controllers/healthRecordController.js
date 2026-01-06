@@ -59,7 +59,7 @@ exports.createRecord = async (req, res) => {
         userId,
         finalHeight,
         weight,
-        bodyFat || null,
+        bodyFat,
         bmi,
         recordedDate
       ]

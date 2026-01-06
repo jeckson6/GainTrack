@@ -65,7 +65,7 @@ export default function Dashboard() {
   };
 
   const bodyFatStatus = (bf, gender) => {
-    if (!bf || !gender) return badge("—", "gray");
+    if (bf == null || !gender) return badge("—", "gray");
 
     if (gender === "Male") {
       if (bf <= 20) return badge("Healthy", "green");
@@ -167,7 +167,7 @@ export default function Dashboard() {
                 Body Fat Analysis
               </h2>
               <p className="text-3xl font-bold mb-3">
-                {latest.body_fat_percentage
+                {latest.body_fat_percentage != null
                   ? `${latest.body_fat_percentage}%`
                   : "—"}
               </p>

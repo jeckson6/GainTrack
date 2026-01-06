@@ -39,9 +39,27 @@ exports.analyzeHealth = async (req, res) => {
     }
 
     const [[profile]] = await db.promise().query(
-      "SELECT user_gender FROM user_profile WHERE user_id = ?",
+      `
+  SELECT user_gender, user_date_of_birth
+  FROM user_profile
+  WHERE user_id = ?
+  `,
       [userId]
     );
+
+    if (!profile) {
+      return res.status(400).json({
+        code: "PROFILE_NOT_FOUND",
+        message: "User profile not found."
+      });
+    }
+
+    if (!profile.user_gender || !profile.user_date_of_birth) {
+      return res.status(400).json({
+        code: "PROFILE_INCOMPLETE",
+        message: "Please complete your gender and date of birth before using AI Assistant."
+      });
+    }
 
     const [[record]] = await db.promise().query(
       `
@@ -54,12 +72,23 @@ exports.analyzeHealth = async (req, res) => {
       [userId]
     );
 
-    if (!profile || !record) {
-      return res.status(400).json({ message: "Health data incomplete" });
+    if (!profile?.user_gender || !profile?.user_date_of_birth) {
+      return res.status(400).json({
+        code: "PROFILE_INCOMPLETE",
+        message: "Please complete your gender and date of birth before using AI Assistant."
+      });
+    }
+
+    if (!record) {
+      return res.status(400).json({
+        code: "NO_HEALTH_RECORD",
+        message: "Please add at least one health record before using AI Assistant."
+      });
     }
 
     const prompt = buildAIPrompt({
       gender: profile.user_gender,
+      age:profile.user_date_of_birth,
       height: record.height_cm,
       weight: record.weight_kg,
       bmi: record.bmi,
@@ -135,7 +164,7 @@ exports.getHealthSummary = async (req, res) => {
     const { userId } = req.query;
 
     const [[profile]] = await db.promise().query(
-      "SELECT user_gender FROM user_profile WHERE user_id = ?",
+      "SELECT user_gender, user_date_of_birth FROM user_profile WHERE user_id = ?",
       [userId]
     );
 
@@ -148,8 +177,10 @@ exports.getHealthSummary = async (req, res) => {
         body_fat_percentage
       FROM health_record
       WHERE user_id = ?
-      ORDER BY recorded_date DESC
-      LIMIT 1
+       ORDER BY
+    (body_fat_percentage IS NULL),
+    recorded_date DESC
+  LIMIT 1
       `,
       [userId]
     );
@@ -158,6 +189,7 @@ exports.getHealthSummary = async (req, res) => {
 
     res.json({
       gender: profile?.user_gender || "Unknown",
+      age: calculateAge(profile.user_date_of_birth),
       ...record
     });
   } catch (err) {
@@ -167,3 +199,24 @@ exports.getHealthSummary = async (req, res) => {
     });
   }
 };
+
+function calculateAge(dob) {
+  if (!dob) return null;
+
+  const birth = new Date(dob);
+  const today = new Date();
+
+  let age = today.getFullYear() - birth.getFullYear();
+
+  if (
+    today.getMonth() < birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() &&
+      today.getDate() < birth.getDate())
+  ) {
+    age--;
+  }
+  return age;
+}
+
+
+

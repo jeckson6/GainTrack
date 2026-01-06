@@ -42,13 +42,14 @@ exports.register = async (req, res) => {
 // =========================
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("LOGIN BODY:", req.body);
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password required" });
   }
 
   try {
-    // 1️⃣ Load user
+    // 1️ Load user
     const [[user]] = await db.promise().query(
       `
       SELECT 
@@ -62,29 +63,29 @@ exports.login = async (req, res) => {
       [email]
     );
 
-    // 2️⃣ User not found
+    // 2 User not found
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 3️⃣ Check account active ✅ FIXED
+    // 3 Check account active 
     if (!user.is_active) {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    // 4️⃣ Password check ✅ FIXED
+    // 4️ Password check 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 5️⃣ Update last login time
+    // 5️ Update last login time
     await db.promise().query(
       "UPDATE user SET last_login_at = NOW() WHERE user_id = ?",
       [user.user_id]
     );
 
-    // 6️⃣ Detect role
+    // 6️ Detect role
     const [[admin]] = await db.promise().query(
       "SELECT admin_id FROM admin WHERE user_id = ?",
       [user.user_id]
@@ -92,7 +93,7 @@ exports.login = async (req, res) => {
 
     const role = admin ? "admin" : "user";
 
-    // 7️⃣ Response ✅ FIXED
+    // 7️ Response 
     res.json({
       message: "Login successful",
       user: {
@@ -247,7 +248,7 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // 1️⃣ Get user
+    // 1️ Get user
     const [[user]] = await db.promise().query(
       "SELECT password_hash FROM user WHERE user_id = ?",
       [userId]
@@ -257,20 +258,20 @@ exports.changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2️⃣ Compare password (IMPORTANT FIX)
+    // 2️ Compare password
     const isMatch = await bcrypt.compare(
       currentPassword,
-      user.password_hash   // ✅ correct column access
+      user.password_hash   
     );
 
     if (!isMatch) {
       return res.status(401).json({ message: "Current password incorrect" });
     }
 
-    // 3️⃣ Hash new password
+    // 3️ Hash new password
     const newHash = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password
+    // 4️ Update password
     const [result] = await db.promise().query(
       "UPDATE user SET password_hash = ? WHERE user_id = ?",
       [newHash, userId]
@@ -311,13 +312,13 @@ console.log("Forgot password endpoint hit");
       });
     }
 
-    // 🔑 Generate temporary password
+    // Generate temporary password
     const tempPassword =
       Math.random().toString(36).slice(-8);
 
     const hashed = await bcrypt.hash(tempPassword, 10);
 
-    // 🔄 Update password immediately
+    // pdate password immediately
     await db.promise().query(
       `
       UPDATE user
@@ -327,7 +328,7 @@ console.log("Forgot password endpoint hit");
       [hashed, user.user_id]
     );
 
-    // 📧 Send email
+    // Send email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
