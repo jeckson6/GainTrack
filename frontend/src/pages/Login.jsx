@@ -21,6 +21,9 @@ export default function Login() {
   // React Router navigation hook
   const navigate = useNavigate();
 
+  // Toggles password visibility
+  const [showPassword, setShowPassword] = useState(false);
+
   /* ======================
      LOGIN HANDLER
   ====================== */
@@ -123,14 +126,25 @@ export default function Login() {
           />
 
           {/* Password Input Field */}
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="w-full border rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-indigo-600"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+
 
           {/* Forgot Password Navigation */}
           <div className="text-right">

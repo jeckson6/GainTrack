@@ -8,6 +8,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,13 +69,23 @@ export default function Register() {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password (min 8 characters)"
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-green-500"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password (min 8 characters)"
+              className="w-full border rounded-lg p-3 pr-20 focus:ring-2 focus:ring-green-500"
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-4 text-sm text-green-600 font-medium"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
 
           <button
             type="submit"
