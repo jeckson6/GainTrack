@@ -11,10 +11,29 @@ const openai = new OpenAI({
 // helper: attach images permanently
 // ================================
 async function attachImagesToMealPlan(weeklyMeals) {
-  if (!weeklyMeals || typeof weeklyMeals !== "object") return weeklyMeals;
+  if (!weeklyMeals || typeof weeklyMeals !== "object") return {};
 
-  for (const day of Object.keys(weeklyMeals)) {
-    for (const meal of weeklyMeals[day]) {
+  const normalized = {};
+
+  for (const day of [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ]) {
+    const meals = weeklyMeals[day];
+
+    // Force array
+    if (!Array.isArray(meals)) {
+      console.warn(`AI weeklyMeals[${day}] invalid → forcing []`);
+      normalized[day] = [];
+      continue;
+    }
+
+    for (const meal of meals) {
       if (!Array.isArray(meal.foods)) continue;
 
       for (const food of meal.foods) {
@@ -23,9 +42,13 @@ async function attachImagesToMealPlan(weeklyMeals) {
         }
       }
     }
+
+    normalized[day] = meals;
   }
-  return weeklyMeals;
+
+  return normalized;
 }
+
 
 // ================================
 // POST analyze health + generate AI

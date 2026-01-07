@@ -281,9 +281,15 @@ export default function AIAssistant() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {aiResult.weeklyMeals[selectedDay]?.map((meal, i) => (
-              <FoodPlanCard key={i} meal={meal} />
-            ))}
+            {Array.isArray(aiResult.weeklyMeals?.[selectedDay]) ? (
+              aiResult.weeklyMeals[selectedDay].map((meal, i) => (
+                <FoodPlanCard key={i} meal={meal} />
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">
+                No meal plan available for this day.
+              </p>
+            )}
           </div>
         </div>
       )}
